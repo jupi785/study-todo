@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>MISSION: 今日の勉強</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: -apple-system, 'Hiragino Sans', 'YuGothic', sans-serif;
+  background: #07090f;
+  min-height: 100vh;
+  padding: 28px 18px 60px;
+  color: #e8eaf6;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.stars {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none; z-index: 0;
+}
+.star {
+  position: absolute; background: white; border-radius: 50%;
+  animation: twinkle var(--d, 3s) infinite alternate;
+}
+@keyframes twinkle {
+  from { opacity: 0.1; } to { opacity: 0.85; }
+}
+
+.content { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; }
+
+.header { text-align: center; margin-bottom: 26px; }
+.mission-badge {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.2em; color: #7dd3fc;
+  background: rgba(125,211,252,0.1); border: 1px solid rgba(125,211,252,0.35);
+  border-radius: 20px; padding: 5px 16px; margin-bottom: 12px;
+}
+.header h1 {
+  font-size: 30px; font-weight: 700; color: #fff;
+  letter-spacing: 0.06em; margin-bottom: 6px;
+  text-shadow: 0 0 24px rgba(125,211,252,0.45);
+}
+.date { font-size: 13px; color: #3d5066; letter-spacing: 0.1em; }
+
+/* ===== SELECT SCREEN ===== */
+#select-screen { display: block; }
+#mission-screen { display: none; }
+
+.select-intro {
+  text-align: center; margin-bottom: 22px;
+  font-size: 15px; color: #64748b; line-height: 1.7;
+}
+
+.select-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+
+.select-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px; padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer; min-height: 64px;
+  transition: background 0.15s, border-color 0.2s, transform 0.1s;
+  user-select: none; -webkit-user-select: none;
+}
+.select-item:active { transform: scale(0.975); }
+.select-item.selected {
+  background: rgba(125,211,252,0.07);
+  border-color: rgba(125,211,252,0.35);
+}
+
+.sel-box {
+  width: 26px; height: 26px; border-radius: 6px;
+  border: 2px solid rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.2s;
+  background: rgba(255,255,255,0.03);
+}
+.select-item.selected .sel-box {
+  background: #1d4ed8; border-color: #7dd3fc;
+  box-shadow: 0 0 10px rgba(125,211,252,0.45);
+}
+.sel-check { display: none; }
+.select-item.selected .sel-check { display: block; }
+
+.sel-label { font-size: 18px; font-weight: 500; color: #cbd5e1; flex: 1; }
+.sel-tag {
+  font-size: 12px; padding: 3px 10px; border-radius: 20px;
+  background: rgba(29,78,216,0.3); color: #93c5fd;
+  border: 1px solid rgba(29,78,216,0.4); white-space: nowrap; flex-shrink: 0;
+}
+
+.start-btn {
+  display: block; width: 100%; padding: 18px;
+  background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
+  border: none; border-radius: 16px;
+  font-size: 17px; font-weight: 700; color: #fff;
+  cursor: pointer; font-family: inherit;
+  letter-spacing: 0.1em;
+  box-shadow: 0 0 20px rgba(125,211,252,0.25);
+  transition: opacity 0.15s, transform 0.1s;
+}
+.start-btn:active { opacity: 0.85; transform: scale(0.98); }
+.start-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* ===== MISSION SCREEN ===== */
+.progress-section {
+  background: rgba(125,211,252,0.04);
+  border: 1px solid rgba(125,211,252,0.18);
+  border-radius: 18px; padding: 18px 22px; margin-bottom: 22px;
+}
+.progress-top {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 12px;
+}
+.progress-label { font-size: 11px; color: #3d5066; letter-spacing: 0.15em; font-weight: 700; }
+.progress-count { font-size: 22px; font-weight: 700; color: #7dd3fc; text-shadow: 0 0 12px rgba(125,211,252,0.4); }
+.progress-bar {
+  height: 7px; background: rgba(255,255,255,0.06);
+  border-radius: 4px; overflow: hidden; margin-bottom: 10px;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1d4ed8, #38bdf8, #7dd3fc);
+  border-radius: 4px;
+  transition: width 0.5s cubic-bezier(0.34,1.4,0.64,1);
+  box-shadow: 0 0 10px rgba(125,211,252,0.55);
+}
+.energy-label { font-size: 12px; color: #4a6580; text-align: right; letter-spacing: 0.05em; }
+
+.todo-list { display: flex; flex-direction: column; gap: 10px; }
+
+.todo-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px; padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer; min-height: 68px;
+  transition: background 0.15s, border-color 0.2s, transform 0.1s;
+  user-select: none; -webkit-user-select: none;
+}
+.todo-item:active { transform: scale(0.975); }
+.todo-item.done {
+  background: rgba(125,211,252,0.04);
+  border-color: rgba(125,211,252,0.18); opacity: 0.45;
+}
+
+.check-circle {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.3s;
+}
+.todo-item.done .check-circle {
+  background: #1d4ed8; border-color: #7dd3fc;
+  box-shadow: 0 0 14px rgba(125,211,252,0.55);
+}
+.check-icon { display: none; }
+.todo-item.done .check-icon { display: block; }
+
+.todo-num {
+  font-size: 11px; color: #243040; font-weight: 700;
+  letter-spacing: 0.06em; flex-shrink: 0; min-width: 28px;
+}
+.todo-item.done .todo-num { color: #38bdf8; }
+
+.todo-label { font-size: 19px; font-weight: 500; color: #cbd5e1; flex: 1; line-height: 1.35; }
+.todo-item.done .todo-label { text-decoration: line-through; color: #334155; }
+
+.todo-tag {
+  font-size: 12px; padding: 4px 11px; border-radius: 20px;
+  background: rgba(29,78,216,0.3); color: #93c5fd;
+  border: 1px solid rgba(29,78,216,0.45); white-space: nowrap; flex-shrink: 0;
+}
+
+.complete-msg {
+  display: none; text-align: center; padding: 26px 16px; margin-top: 16px;
+  background: rgba(125,211,252,0.06); border: 1px solid rgba(125,211,252,0.3);
+  border-radius: 18px;
+}
+@keyframes float {
+  0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); }
+}
+.rocket-wrap { font-size: 42px; display: block; animation: float 2.2s ease-in-out infinite; margin-bottom: 10px; }
+.complete-title {
+  font-size: 24px; font-weight: 700; color: #7dd3fc;
+  letter-spacing: 0.08em; text-shadow: 0 0 20px rgba(125,211,252,0.6); margin-bottom: 6px;
+}
+.complete-sub { font-size: 14px; color: #4a6580; }
+
+.bottom-btns { display: flex; gap: 10px; margin-top: 26px; }
+
+.reset-btn, .reselect-btn {
+  flex: 1; padding: 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 16px; font-size: 13px; font-weight: 500;
+  color: #3d5066; cursor: pointer; font-family: inherit;
+  letter-spacing: 0.06em; transition: background 0.15s, color 0.15s;
+}
+.reset-btn:active, .reselect-btn:active { background: rgba(255,255,255,0.07); color: #7dd3fc; }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="content">
+  <div class="header">
+    <div class="mission-badge">▶ DAILY MISSION</div>
+    <h1 id="main-title">今日の任務</h1>
+    <p class="date" id="today-date"></p>
+  </div>
+
+  <!-- 選択画面 -->
+  <div id="select-screen">
+    <p class="select-intro">今日やるミッションを選んでスタート！</p>
+    <div class="select-list" id="select-list"></div>
+    <button class="start-btn" id="start-btn" onclick="startMission()" disabled>
+      ▶ ミッションスタート！
+    </button>
+  </div>
+
+  <!-- ミッション画面 -->
+  <div id="mission-screen">
+    <div class="progress-section">
+      <div class="progress-top">
+        <span class="progress-label">MISSION PROGRESS</span>
+        <span class="progress-count" id="count-display">0 / 0</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+      <div class="energy-label" id="energy-label">エネルギー充填中…</div>
+    </div>
+
+    <div class="todo-list" id="todo-list"></div>
+
+    <div class="complete-msg" id="complete-msg">
+      <span class="rocket-wrap">🚀</span>
+      <div class="complete-title">MISSION COMPLETE!</div>
+      <div class="complete-sub">全ミッションクリア！最高だぞ！</div>
+    </div>
+
+    <div class="bottom-btns">
+      <button class="reselect-btn" onclick="goSelect()">◀ ミッションを選び直す</button>
+      <button class="reset-btn" onclick="resetDone()">チェックをリセット</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ALL_TASKS = [
+  { id: 1, label: "教科書", tag: "" },
+  { id: 2, label: "音読", tag: "" },
+  { id: 3, label: "宿題（漢字ドリル）", tag: "" },
+  { id: 11, label: "宿題（算数ドリル）", tag: "" },
+  { id: 12, label: "宿題（音読）", tag: "" },
+  { id: 4, label: "ペラペラカード", tag: "" },
+  { id: 5, label: "公文", tag: "5枚" },
+  { id: 6, label: "算　問題集", tag: "" },
+  { id: 7, label: "国　文章", tag: "" },
+  { id: 8, label: "算　浜問題", tag: "" },
+  { id: 9, label: "国　浜問題", tag: "" },
+  { id: 10, label: "言葉ドリル", tag: "" },
+];
+
+const KEY_SEL = "study-selected-v3";
+const KEY_DONE = "study-done-v3";
+const KEY_MODE = "study-mode-v3";
+
+function load(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
+function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
+
+let selected = load(KEY_SEL) || {};
+let done = load(KEY_DONE) || {};
+let mode = load(KEY_MODE) || "select";
+
+function renderSelectScreen() {
+  const list = document.getElementById("select-list");
+  list.innerHTML = "";
+  ALL_TASKS.forEach(task => {
+    const isSelected = !!selected[task.id];
+    const div = document.createElement("div");
+    div.className = "select-item" + (isSelected ? " selected" : "");
+    div.innerHTML = `
+      <div class="sel-box">
+        <svg class="sel-check" width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <polyline points="2,6.5 5.5,10 11,3" stroke="#7dd3fc" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="sel-label">${task.label}</span>
+      ${task.tag ? `<span class="sel-tag">${task.tag}</span>` : ""}
+    `;
+    div.addEventListener("click", () => toggleSelect(task.id));
+    list.appendChild(div);
+  });
+  updateStartBtn();
+}
+
+function toggleSelect(id) {
+  selected[id] = !selected[id];
+  if (!selected[id]) delete selected[id];
+  save(KEY_SEL, selected);
+  renderSelectScreen();
+}
+
+function updateStartBtn() {
+  const count = Object.keys(selected).filter(k => selected[k]).length;
+  const btn = document.getElementById("start-btn");
+  btn.disabled = count === 0;
+  btn.textContent = count > 0 ? `▶ ${count}個のミッションをスタート！` : "▶ ミッションスタート！";
+}
+
+function startMission() {
+  done = {};
+  save(KEY_DONE, done);
+  mode = "mission";
+  save(KEY_MODE, mode);
+  showMissionScreen();
+}
+
+function showMissionScreen() {
+  document.getElementById("select-screen").style.display = "none";
+  document.getElementById("mission-screen").style.display = "block";
+  renderMissionScreen();
+}
+
+function renderMissionScreen() {
+  const todayTasks = ALL_TASKS.filter(t => selected[t.id]);
+  const list = document.getElementById("todo-list");
+  list.innerHTML = "";
+  todayTasks.forEach((task, i) => {
+    const isDone = !!done[task.id];
+    const item = document.createElement("div");
+    item.className = "todo-item" + (isDone ? " done" : "");
+    item.innerHTML = `
+      <div class="check-circle">
+        <svg class="check-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <polyline points="2,7 6,11 12,3" stroke="#7dd3fc" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="todo-num">No.${String(i+1).padStart(2,"0")}</span>
+      <span class="todo-label">${task.label}</span>
+      ${task.tag ? `<span class="todo-tag">${task.tag}</span>` : ""}
+    `;
+    item.addEventListener("click", () => toggleDone(task.id));
+    list.appendChild(item);
+  });
+  updateProgress(todayTasks);
+}
+
+function toggleDone(id) {
+  done[id] = !done[id];
+  if (!done[id]) delete done[id];
+  save(KEY_DONE, done);
+  renderMissionScreen();
+}
+
+const msgs = (n, total) => {
+  if (n === 0) return "エネルギー充填中…";
+  if (n === total) return "MISSION COMPLETE!";
+  const pct = n / total;
+  if (pct < 0.3) return "出撃準備開始！";
+  if (pct < 0.5) return "いい調子だ！";
+  if (pct < 0.7) return "半分クリア！すごいぞ！";
+  if (pct < 0.9) return "ラストスパート！";
+  return `あと${total - n}つ！`;
+};
+
+function updateProgress(todayTasks) {
+  const total = todayTasks.length;
+  const doneCount = todayTasks.filter(t => !!done[t.id]).length;
+  const pct = total > 0 ? Math.round(doneCount / total * 100) : 0;
+  document.getElementById("count-display").textContent = doneCount + " / " + total;
+  document.getElementById("progress-fill").style.width = pct + "%";
+  document.getElementById("energy-label").textContent = msgs(doneCount, total);
+  document.getElementById("complete-msg").style.display = doneCount === total && total > 0 ? "block" : "none";
+}
+
+function goSelect() {
+  mode = "select";
+  save(KEY_MODE, mode);
+  document.getElementById("mission-screen").style.display = "none";
+  document.getElementById("select-screen").style.display = "block";
+  renderSelectScreen();
+}
+
+function resetDone() {
+  if (confirm("チェックをリセットしますか？")) {
+    done = {};
+    save(KEY_DONE, done);
+    renderMissionScreen();
+  }
+}
+
+(function makeStar() {
+  const el = document.getElementById("stars");
+  for (let i = 0; i < 90; i++) {
+    const s = document.createElement("div");
+    s.className = "star";
+    const size = Math.random() * 2.5 + 0.4;
+    s.style.cssText = `width:${size}px;height:${size}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${(Math.random()*4+2).toFixed(1)}s;animation-delay:${(Math.random()*4).toFixed(1)}s;`;
+    el.appendChild(s);
+  }
+})();
+
+const d = new Date();
+const wd = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+document.getElementById("today-date").textContent =
+  d.getFullYear() + "." + String(d.getMonth()+1).padStart(2,"0") + "." + String(d.getDate()).padStart(2,"0") + "  " + wd[d.getDay()];
+
+if (mode === "mission" && Object.keys(selected).length > 0) {
+  showMissionScreen();
+} else {
+  mode = "select";
+  save(KEY_MODE, mode);
+  renderSelectScreen();
+}
+</script>
+</body>
+</html>
